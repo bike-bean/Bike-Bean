@@ -1,7 +1,8 @@
 /*
-  Version 1.0
+  Version 1.1
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 29.11.2019
+  Date: 10.12.2019
+  www.bike-bean.de
 */
 
 #include <avr/sleep.h>
@@ -48,23 +49,16 @@ void loop(){
     batcounter++;
   }while((battpercent != battpercent2) && batcounter < 5);  
   
-  if (battpercent > 0 && battpercent != 111) { //CallReady(30) == true
+  if (battpercent > 0 && battpercent != 111) { 
 
   waitFor("+CMTI", 15000);      
 
-    if (battpercent < 20 && mytelephonenumber != 0) { 
-      if(Batterylowsent == 0 && battpercent > 10){
-        char *sendsmstext = sendsmstextarray; 
-        memset(sendsmstextarray, NULL, 161);   
-        strcat(sendsmstext, "BATTERY LOW!\nBATTERY STATUS: "); 
-        char battpercentage[3] = ""; 
-        itoa(battpercent,battpercentage,10); 
-        strcat(sendsmstext, battpercentage);
-        strcat(sendsmstext, "%"); 
-        SendSMS(mytelephonenumber, sendsmstext); 
-        Batterylowsent = 1;
-      }else 
-        if(battpercent <= 10 && battpercent > 0 && Batterylowsent == 1){
+    int i = 1;
+    char *unread = GetUnread(i); 
+    while (strcasestr(unread, "REC") != NULL) {
+
+      if (battpercent < 20 && mytelephonenumber != 0) { 
+        if(Batterylowsent == 0 && battpercent > 10){
           char *sendsmstext = sendsmstextarray; 
           memset(sendsmstextarray, NULL, 161);   
           strcat(sendsmstext, "BATTERY LOW!\nBATTERY STATUS: "); 
@@ -72,19 +66,26 @@ void loop(){
           itoa(battpercent,battpercentage,10); 
           strcat(sendsmstext, battpercentage);
           strcat(sendsmstext, "%"); 
-          strcat(sendsmstext, "\nInterval set to 24h");
           SendSMS(mytelephonenumber, sendsmstext); 
-          interval = 24;
-          Batterylowsent = 2;
-        }
-    }//Battery Warning SMS
+          Batterylowsent = 1;
+        }else 
+          if(battpercent <= 10 && battpercent > 0 && Batterylowsent == 1){
+            char *sendsmstext = sendsmstextarray; 
+            memset(sendsmstextarray, NULL, 161);   
+            strcat(sendsmstext, "BATTERY LOW!\nBATTERY STATUS: "); 
+            char battpercentage[3] = ""; 
+            itoa(battpercent,battpercentage,10); 
+            strcat(sendsmstext, battpercentage);
+            strcat(sendsmstext, "%"); 
+            strcat(sendsmstext, "\nInterval set to 24h");
+            SendSMS(mytelephonenumber, sendsmstext); 
+            interval = 24;
+            Batterylowsent = 2;
+          }
+      }//Battery Warning SMS
 
-    int i = 1;
-    char *unread = GetUnread(i); 
-    while (strcasestr(unread, "REC") != NULL) {
-      if (strcasestr(unread, "UNREAD") != NULL) {
-        char *checksmstext = GetSMSText(i);
-        
+       if (strcasestr(unread, "UNREAD") != NULL) {
+       char *checksmstext = GetSMSText(i);
        /* doesn`t work anymore...
         
         if(strcasestr(checksmstext, "pos") != NULL && strlen(checksmstext) == 3){
@@ -328,7 +329,20 @@ void loop(){
         waitFor("+CMTI", 15000); 
         flushgsm(5000);
         unread = GetUnread(i);
-      }//if
+
+        battpercent = getBattPercent();
+        battpercent2 = 120;
+        batcounter = 0;
+
+        // checks battery level after 2 secondes until it`s equal. Sometimes there was an issue before
+        do{ 
+          battpercent2 = battpercent;
+          flushgsm(2000);
+          battpercent = getBattPercent();
+          batcounter++;
+        }while((battpercent != battpercent2) && batcounter < 5);  
+        
+      }//if wifi on
       
     }//while
   free(unread);
@@ -596,9 +610,10 @@ void gsmOn() { //switch gsm on
 
   pinMode(PD5, OUTPUT);
   gsmSerial.begin(9600);
+  delay(1000);
   gsmSerial.println("AT");
 
-  if (waitFor("OK", 2000)) {
+  if (waitFor("OK", 1000)) {
     return;
   }
 
@@ -621,9 +636,13 @@ void wifiOn() {
 
   pinMode(A2, OUTPUT); 
   digitalWrite(A2, LOW);
-  delay(1000);
+  delay(500);
   digitalWrite(A2, HIGH);
-
+  delay(500);
+  digitalWrite(A2, LOW);
+  delay(500);
+  digitalWrite(A2, HIGH);
+  delay(500);
   wifiSerial.begin(9600);
   wifiSerial.println(F("AT"));
   waitForWifi("OK", 4000);
@@ -631,7 +650,8 @@ void wifiOn() {
   waitForWifi("OK", 4000);
   wifiSerial.println(F("AT+CWSAP=\"BikeBean.de\",\"12345678\",7,3"));
   waitForWifi("OK", 4000);
-  delay(10000); //wait until currentpeaks are gone before further commands will be executed
+  delay(5000); //wait until currentpeaks are gone before further commands will be executed
+
 }
 
 bool waitForWifi(const char* searchtext, int timer) {
@@ -665,6 +685,7 @@ bool waitForWifi(const char* searchtext, int timer) {
   if (arraysize == 240) { //more data then memory will be deleted here
     flushwifi(1000);
   }
+
   return false;
 }
 
@@ -701,8 +722,7 @@ char *readwifiData(int timer) {
 }
 
 /*
-void enableBearerProfile()
-{Serial.println("enbear");
+void enableBearerProfile(){
   // This function enable and set the bearer profile
   gsmSerial.print(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r\n")); 
   waitFor("OK", 10000);
@@ -725,6 +745,7 @@ void disableBearerProfile() {
 */
 
 void GetWifis() { 
+
   wifiSerial.println(F("AT"));
   char* smstext = sendsmstextarray; 
   if (waitForWifi("OK", 4000) == true) {
