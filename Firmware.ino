@@ -1,7 +1,7 @@
 /*
-  Version 1.1
+  Version 1.2
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 10.12.2019
+  Date: 06.01.2020
   www.bike-bean.de
 */
 
@@ -255,7 +255,7 @@ void loop(){
         }else
         if(strcasestr(checksmstext, "warningnumber") != NULL && strlen(checksmstext) == 13){
           mytelephonenumber = SenderNumber(i);
-          char *sendernumber = SenderNumber(i);          
+          char *sendernumber = mytelephonenumber;          
           char *sendsmstext = sendsmstextarray; 
           memset(sendsmstextarray, NULL, 161);  
           strcat(sendsmstext,"Battery Status Warningnumber has been changed to "); 
