@@ -1,7 +1,7 @@
 /*
-  Version 1.2
+  Version 1.3
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 06.01.2020
+  Date: 16.04.2020
   www.bike-bean.de
 */
 
@@ -32,10 +32,9 @@ void setup() {
 }
 
 void loop(){ 
-
   gsmOn();
   Config();
-
+  
   flushgsm(2000); 
   byte battpercent = getBattPercent();
   byte battpercent2 = 120;
@@ -52,7 +51,7 @@ void loop(){
   if (battpercent > 0 && battpercent != 111) { 
 
   waitFor("+CMTI", 15000);      
-
+    flushgsm(15000);
     int i = 1;
     char *unread = GetUnread(i); 
     while (strcasestr(unread, "REC") != NULL) {
@@ -215,7 +214,7 @@ void loop(){
           SendSMS(sendernumber, sendsmstext);          
           free(sendernumber);
           DeleteSMS(i); 
-        }else
+        }else/*
         if((strcasestr(checksmstext, "int24") != NULL && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 24") != NULL && strlen(checksmstext) == 6)){
           interval = 24;
           char *sendernumber = SenderNumber(i);          
@@ -229,7 +228,7 @@ void loop(){
           SendSMS(sendernumber, sendsmstext);          
           free(sendernumber);
           DeleteSMS(i); 
-        }else
+        }else*/
         if(strcasestr(checksmstext, "wapp") != NULL && strlen(checksmstext) == 4){ //wlan daten + GSM daten für app
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
@@ -242,7 +241,7 @@ void loop(){
           gsmOn();
           Config();
           waitFor("+CMTI", 15000); 
-          flushgsm(5000);       
+          flushgsm(15000);       
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
           strcat(sendsmstext, battpercentage);
@@ -283,7 +282,7 @@ void loop(){
           gsmOn();
           Config();
           waitFor("+CMTI", 15000); 
-          flushgsm(5000);  
+          flushgsm(15000);  
           strcat(sendsmstext, "\nWifi is on!\n");     
           strcat(sendsmstext,"Battery Status: ");
           char battpercentage[3] = ""; 
@@ -327,7 +326,7 @@ void loop(){
         gsmOn();
         Config();
         waitFor("+CMTI", 15000); 
-        flushgsm(5000);
+        flushgsm(15000);
         unread = GetUnread(i);
 
         battpercent = getBattPercent();
@@ -350,7 +349,7 @@ void loop(){
   }//Battery > 0?
   gsmOff();
 
-  for (int counter2 = 0; counter2 < (interval * (3600/2)); counter2++) { //sleep X h
+  for (int counter2 = 0; counter2 < (interval * (3600/2)); counter2++) { //sleep X h 
     delayWDT(WDTO_2S);   // deep sleep
   }
 }
@@ -445,7 +444,6 @@ char *GetSMSText(int SMSindex) {
 }
 
 bool SendSMS(const char* number, char* text) { 
-
   if (CallReady(30) == false) { //checks if connected
     return false;
   }
