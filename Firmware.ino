@@ -1,7 +1,7 @@
 /*
-  Version 1.3
+  Version 1.4
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 16.04.2020
+  Date: 22.04.2020
   www.bike-bean.de
 */
 
@@ -9,21 +9,19 @@
 #include <avr/wdt.h>
 #include <SoftwareSerial.h>
 #include <avr/power.h>
-#include <string.h>
+#include <EEPROM.h>
 
 SoftwareSerial gsmSerial(PD6, PD5); //RX ,TX
 SoftwareSerial wifiSerial(4, 17); //RX, TX
 
 int Batterylowsent = 0;
-char mytelephonenumberarray[20] = ""; //+49XXXXXXXXXXXX
-char *mytelephonenumber = mytelephonenumberarray; 
 char sendsmstextarray[161] = ""; //used for gsm towers, wifi towers and getsmstext
 int interval = 1;
 boolean iswifion = false;
 int arraysize = 300;
 char dataarray[300];
 
-////////////////300 bytes RAM required//////////////////
+////////////////350 bytes RAM required//////////////////
 
 void setup() {
   wdt_disable();  //recommended to do this in case of low probability event
@@ -34,7 +32,7 @@ void setup() {
 void loop(){ 
   gsmOn();
   Config();
-  
+ 
   flushgsm(2000); 
   byte battpercent = getBattPercent();
   byte battpercent2 = 120;
@@ -50,13 +48,15 @@ void loop(){
   
   if (battpercent > 0 && battpercent != 111) { 
 
-  waitFor("+CMTI", 15000);      
-    flushgsm(15000);
+  waitFor("+CMTI", 15000);      //wait for incoming SMS 
+    flushgsm(15000);            //wait another 15 seconds to connect to cell towers
     int i = 1;
     char *unread = GetUnread(i); 
-    while (strcasestr(unread, "REC") != NULL) {
+    while (strcasestr(unread, "REC") != NULL) { //go through all SMS 
+      
+    char *warningnumber = read_EEPROM(10); //reads warningnumber from EEPROM
 
-      if (battpercent < 20 && mytelephonenumber != 0) { 
+      if (battpercent < 20 && strlen(warningnumber) > 0) { //checks for low battery status
         if(Batterylowsent == 0 && battpercent > 10){
           char *sendsmstext = sendsmstextarray; 
           memset(sendsmstextarray, NULL, 161);   
@@ -65,7 +65,7 @@ void loop(){
           itoa(battpercent,battpercentage,10); 
           strcat(sendsmstext, battpercentage);
           strcat(sendsmstext, "%"); 
-          SendSMS(mytelephonenumber, sendsmstext); 
+          SendSMS(warningnumber, sendsmstext); 
           Batterylowsent = 1;
         }else 
           if(battpercent <= 10 && battpercent > 0 && Batterylowsent == 1){
@@ -77,13 +77,13 @@ void loop(){
             strcat(sendsmstext, battpercentage);
             strcat(sendsmstext, "%"); 
             strcat(sendsmstext, "\nInterval set to 24h");
-            SendSMS(mytelephonenumber, sendsmstext); 
+            SendSMS(warningnumber, sendsmstext); 
             interval = 24;
             Batterylowsent = 2;
           }
       }//Battery Warning SMS
 
-       if (strcasestr(unread, "UNREAD") != NULL) {
+       if (strcasestr(unread, "UNREAD") != NULL) { //if SMS is unread it will be checked for commands
        char *checksmstext = GetSMSText(i);
        /* doesn`t work anymore...
         
@@ -122,10 +122,12 @@ void loop(){
           memset(sendsmstextarray, NULL, 161);
           char *sendernumber = SenderNumber(i); 
           strcat(sendsmstext, "Warningnumber: ");
-          if(mytelephonenumber == NULL){
+          *warningnumber = read_EEPROM(10);
+          if(strlen(warningnumber) == 0){
             strcat(sendsmstext, "no number set\n");
           }else{
-            strcat(sendsmstext, mytelephonenumber);
+            char *warningnumber = read_EEPROM(10);
+            strcat(sendsmstext, warningnumber);
             strcat(sendsmstext, "\n");
           }//else       
           strcat(sendsmstext,"Interval: ");
@@ -214,7 +216,7 @@ void loop(){
           SendSMS(sendernumber, sendsmstext);          
           free(sendernumber);
           DeleteSMS(i); 
-        }else/*
+        }else
         if((strcasestr(checksmstext, "int24") != NULL && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 24") != NULL && strlen(checksmstext) == 6)){
           interval = 24;
           char *sendernumber = SenderNumber(i);          
@@ -228,7 +230,7 @@ void loop(){
           SendSMS(sendernumber, sendsmstext);          
           free(sendernumber);
           DeleteSMS(i); 
-        }else*/
+        }else
         if(strcasestr(checksmstext, "wapp") != NULL && strlen(checksmstext) == 4){ //wlan daten + GSM daten für app
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
@@ -241,7 +243,7 @@ void loop(){
           gsmOn();
           Config();
           waitFor("+CMTI", 15000); 
-          flushgsm(15000);       
+          flushgsm(20000);       
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
           strcat(sendsmstext, battpercentage);
@@ -253,12 +255,13 @@ void loop(){
           DeleteSMS(i);
         }else
         if(strcasestr(checksmstext, "warningnumber") != NULL && strlen(checksmstext) == 13){
-          mytelephonenumber = SenderNumber(i);
-          char *sendernumber = mytelephonenumber;          
+          char *sendernumber = SenderNumber(i);
+          write_EEPROM(10, sendernumber); 
+          delay(10);
           char *sendsmstext = sendsmstextarray; 
           memset(sendsmstextarray, NULL, 161);  
           strcat(sendsmstext,"Battery Status Warningnumber has been changed to "); 
-          strcat(sendsmstext, mytelephonenumber);
+          strcat(sendsmstext, sendernumber);
           strcat(sendsmstext,"\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -282,7 +285,7 @@ void loop(){
           gsmOn();
           Config();
           waitFor("+CMTI", 15000); 
-          flushgsm(15000);  
+          flushgsm(20000);  
           strcat(sendsmstext, "\nWifi is on!\n");     
           strcat(sendsmstext,"Battery Status: ");
           char battpercentage[3] = ""; 
@@ -314,7 +317,7 @@ void loop(){
       free(unread);
       unread = GetUnread(i);
 
-      if(strcasestr(unread, "REC") == NULL && iswifion == true){
+      if(strcasestr(unread, "REC") == NULL && iswifion == true){ //if wifi is switched on there need to be a short wifi break every 15 minutes to send or recieve SMS
         free(unread);
         i = 1;
         gsmOff();
@@ -326,7 +329,7 @@ void loop(){
         gsmOn();
         Config();
         waitFor("+CMTI", 15000); 
-        flushgsm(15000);
+        flushgsm(20000);
         unread = GetUnread(i);
 
         battpercent = getBattPercent();
@@ -370,7 +373,7 @@ void flushwifi(uint16_t timeout) {
     }
 }
 
-char *SenderNumber(int SMSindex) { 
+char *SenderNumber(int SMSindex) { //get number from incoming SMS
 
   gsmSerial.print(F("AT+CMGR="));
   gsmSerial.print(SMSindex);
@@ -390,7 +393,7 @@ char *SenderNumber(int SMSindex) {
     return sendernumber;
 }
 
-char *GetUnread(int SMSindex) {
+char *GetUnread(int SMSindex) { //get SMS read status
 
   gsmSerial.print("AT+CMGR=");
   gsmSerial.print(SMSindex);
@@ -412,7 +415,7 @@ char *GetUnread(int SMSindex) {
 
 }
 
-char *GetSMSText(int SMSindex) { 
+char *GetSMSText(int SMSindex) { //get SMS text
 
   gsmSerial.print(F("AT+CMGR="));
   gsmSerial.print(SMSindex);
@@ -468,7 +471,7 @@ bool SendSMS(const char* number, char* text) {
   }
 }
 
-byte getBattPercent() { 
+byte getBattPercent() { //get battery level
 
   //This function is use for getting battery percentage
   //It will return a value between 0 - 100
@@ -530,8 +533,7 @@ void wifiOff() {
 
 }
 
-void delayWDT(byte timer) { 
-
+void delayWDT(byte timer) { //deep sleep function
   sleep_enable(); //enable the sleep capability
   set_sleep_mode(SLEEP_MODE_PWR_DOWN); //set the type of sleep mode. Default is Idle
   ADCSRA &= ~(1 << ADEN); //Turn off ADC before going to sleep (set ADEN bit to 0)
@@ -562,7 +564,7 @@ void gsmOff() { //switch gsm off
   pinMode(PD5, INPUT); //TX
 }
 
-bool waitFor(const char* searchtext, int timer) {
+bool waitFor(const char* searchtext, int timer) { //wait some time for a specified incoming text
 
   int i = 0;
   int timercounter = 0;
@@ -652,7 +654,7 @@ void wifiOn() {
 
 }
 
-bool waitForWifi(const char* searchtext, int timer) {
+bool waitForWifi(const char* searchtext, int timer) { //wait some time for a specified incoming text
 
   int i = 0;
   int arraysize = 200;
@@ -687,7 +689,7 @@ bool waitForWifi(const char* searchtext, int timer) {
   return false;
 }
 
-char *readwifiData(int timer) { 
+char *readwifiData(int timer) { //reads incoming data from wifi module
 
   memset(dataarray, NULL, arraysize);
   int a = 0;
@@ -742,7 +744,7 @@ void disableBearerProfile() {
 }
 */
 
-void GetWifis() { 
+void GetWifis() { //formats wifi data into desired SMS format
 
   wifiSerial.println(F("AT"));
   char* smstext = sendsmstextarray; 
@@ -811,7 +813,7 @@ void getLocation() {
 }
 */
 
-boolean CallReady(int waittime) {
+boolean CallReady(int waittime) { //checks if GSM Module is ready for calling/SMS
   for (int connectioncounter = 0; connectioncounter < waittime; connectioncounter++) {
     gsmSerial.println(F("AT+CCALR?"));
     if ((waitFor(": 1", 1000)) == true) {
@@ -833,7 +835,7 @@ void DeleteSMS(int SMSindex) { //delete SMS with index X and all sent SMS
   waitFor("OK", 4000);
 }
 
-void getLocationApp() { 
+void getLocationApp() { //formats GSM towers into desired format for SMS
 
   gsmSerial.print(F("AT+CENG=3\r\n"));
   waitFor("OK",1000);
@@ -873,7 +875,7 @@ void getLocationApp() {
    }
 }
 
-void GetWifisApp() { 
+void GetWifisApp() { //formats wifis into desired format for SMS
   wifiSerial.println(F("AT"));
   char* smstext = sendsmstextarray; 
   if (waitForWifi("OK", 4000) == true) {
@@ -911,4 +913,35 @@ void GetWifisApp() {
     memset(sendsmstextarray, NULL, 161); 
     strcpy(smstext, "ERROR"); 
   }
+}
+
+void write_EEPROM(int add, char* data){ //writes data (Warningnumber) to EEPROM 
+
+  int _size = strlen(data);
+  int i;
+  for(i=0;i<_size;i++){
+    EEPROM.write(add+i,data[i]);
+  }
+  EEPROM.write(add+_size,'\0');   //Add termination null character for String Data
+}
+
+
+char *read_EEPROM(char add){ //reads data (Warningnumber) from EEPROM 
+
+  memset(dataarray, NULL, arraysize);
+  int len=0;
+  unsigned char k;
+  k=EEPROM.read(add);
+  while(k != '\0' && len<20){   //Read until null character or 20 chars (max phone number length)
+    k=EEPROM.read(add+len);
+    dataarray[len]=k;
+    len++;
+  }
+  if(k != '\0'){
+      char EEPROMtextarray[20] = "";
+      char *EEPROMtext = EEPROMtextarray;
+      write_EEPROM(10, EEPROMtext);
+      delay(10);
+    }
+  return dataarray;
 }
