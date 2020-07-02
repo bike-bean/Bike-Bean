@@ -1,7 +1,7 @@
 /*
-  Version 1.4
+  Version 1.5
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 22.04.2020
+  Date: 02.07.2020
   www.bike-bean.de
 */
 
@@ -16,7 +16,7 @@ SoftwareSerial wifiSerial(4, 17); //RX, TX
 
 int Batterylowsent = 0;
 char sendsmstextarray[161] = ""; //used for gsm towers, wifi towers and getsmstext
-int interval = 1;
+float interval = 1;
 boolean iswifion = false;
 int arraysize = 300;
 char dataarray[300];
@@ -352,8 +352,8 @@ void loop(){
   }//Battery > 0?
   gsmOff();
 
-  for (int counter2 = 0; counter2 < (interval * (3600/2)); counter2++) { //sleep X h 
-    delayWDT(WDTO_2S);   // deep sleep
+  for (int counter2 = 0; counter2 < (int)(interval * (3600/2)); counter2++) { //sleep X h
+    delayWDT(WDTO_2S); // deep sleep
   }
 }
 
@@ -907,7 +907,7 @@ void GetWifisApp() { //formats wifis into desired format for SMS
     }//while
     if (strlen(smstext) < 10) {
       memset(sendsmstextarray, NULL, 161); 
-      strcpy(smstext, "no wifi available"); 
+      strcpy(smstext, "no wifi available\n"); 
     }
   }else{
     memset(sendsmstextarray, NULL, 161); 
