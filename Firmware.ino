@@ -48,7 +48,7 @@ void loop(){
   
   if (battpercent > 0 && battpercent != 111) { 
 
-    flushgsm(35000);            //wait another 15 seconds to connect to cell towers
+    flushgsm(35000);            //wait to connect to cell towers
     int i = 1;
     char *unread = GetUnread(i); 
     while (strcasestr(unread, "REC") != NULL) { //go through all SMS 
