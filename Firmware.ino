@@ -16,7 +16,7 @@ SoftwareSerial wifiSerial(4, 17); //RX, TX
 
 int Batterylowsent = 0;
 char sendsmstextarray[161] = ""; //used for gsm towers, wifi towers and getsmstext
-float interval = 0.1;
+float interval = 1;
 boolean iswifion = false;
 int arraysize = 300;
 char dataarray[300];
