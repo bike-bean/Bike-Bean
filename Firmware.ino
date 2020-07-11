@@ -1,7 +1,7 @@
 /*
-  Version 1.5
+  Version 1.6
   Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 02.07.2020
+  Date: 11.07.2020
   www.bike-bean.de
 */
 
@@ -16,7 +16,7 @@ SoftwareSerial wifiSerial(4, 17); //RX, TX
 
 int Batterylowsent = 0;
 char sendsmstextarray[161] = ""; //used for gsm towers, wifi towers and getsmstext
-float interval = 1;
+float interval = 0.1;
 boolean iswifion = false;
 int arraysize = 300;
 char dataarray[300];
@@ -48,8 +48,7 @@ void loop(){
   
   if (battpercent > 0 && battpercent != 111) { 
 
-  waitFor("+CMTI", 15000);      //wait for incoming SMS 
-    flushgsm(15000);            //wait another 15 seconds to connect to cell towers
+    flushgsm(35000);            //wait another 15 seconds to connect to cell towers
     int i = 1;
     char *unread = GetUnread(i); 
     while (strcasestr(unread, "REC") != NULL) { //go through all SMS 
@@ -242,8 +241,7 @@ void loop(){
           wifiOff();
           gsmOn();
           Config();
-          waitFor("+CMTI", 15000); 
-          flushgsm(20000);       
+          flushgsm(35000);       
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
           strcat(sendsmstext, battpercentage);
@@ -284,8 +282,7 @@ void loop(){
           wifiOff();
           gsmOn();
           Config();
-          waitFor("+CMTI", 15000); 
-          flushgsm(20000);  
+          flushgsm(35000);  
           strcat(sendsmstext, "\nWifi is on!\n");     
           strcat(sendsmstext,"Battery Status: ");
           char battpercentage[3] = ""; 
@@ -328,8 +325,7 @@ void loop(){
         wifiOff();
         gsmOn();
         Config();
-        waitFor("+CMTI", 15000); 
-        flushgsm(20000);
+        flushgsm(35000);
         unread = GetUnread(i);
 
         battpercent = getBattPercent();
