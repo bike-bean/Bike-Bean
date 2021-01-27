@@ -1,7 +1,7 @@
 /*
-  Version 1.6
-  Autor: Mirko Buhrandt, Uwe Gerhard
-  Date: 11.07.2020
+  Version 1.7.0
+  Autor: Mirko Buhrandt, Uwe Gerhard, Johannes Büttner
+  Date: 25.01.2020
   www.bike-bean.de
 */
 
@@ -35,7 +35,7 @@ void loop(){
  
   flushgsm(2000); 
   byte battpercent = getBattPercent();
-  byte battpercent2 = 120;
+  byte battpercent2;
   int batcounter = 0;
 
   // checks battery level after 2 secondes until it`s equal. Sometimes there was an issue before
@@ -51,14 +51,14 @@ void loop(){
     flushgsm(35000);            //wait to connect to cell towers
     int i = 1;
     char *unread = GetUnread(i); 
-    while (strcasestr(unread, "REC") != NULL) { //go through all SMS 
-      
+    while (strcasestr(unread, "REC") != nullptr) { //go through all SMS       
+
     char *warningnumber = read_EEPROM(10); //reads warningnumber from EEPROM
 
       if (battpercent < 20 && strlen(warningnumber) > 0) { //checks for low battery status
         if(Batterylowsent == 0 && battpercent > 10){
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);   
+          memset(sendsmstextarray, 0, 161);   
           strcat(sendsmstext, "BATTERY LOW!\nBATTERY STATUS: "); 
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -69,7 +69,7 @@ void loop(){
         }else 
           if(battpercent <= 10 && battpercent > 0 && Batterylowsent == 1){
             char *sendsmstext = sendsmstextarray; 
-            memset(sendsmstextarray, NULL, 161);   
+            memset(sendsmstextarray, 0, 161);   
             strcat(sendsmstext, "BATTERY LOW!\nBATTERY STATUS: "); 
             char battpercentage[3] = ""; 
             itoa(battpercent,battpercentage,10); 
@@ -82,25 +82,9 @@ void loop(){
           }
       }//Battery Warning SMS
 
-       if (strcasestr(unread, "UNREAD") != NULL) { //if SMS is unread it will be checked for commands
+       if (strcasestr(unread, "UNREAD") != nullptr) { //if SMS is unread it will be checked for commands
        char *checksmstext = GetSMSText(i);
-       /* doesn`t work anymore...
-        
-        if(strcasestr(checksmstext, "pos") != NULL && strlen(checksmstext) == 3){
-          char *sendernumber = SenderNumber(i);   
-          char *sendsmstext = sendsmstextarray; 
-          getLocation();
-          strcat(sendsmstext, "\nBattery Status: ");
-          char battpercentage[3] = ""; 
-          itoa(battpercent,battpercentage,10); 
-          strcat(sendsmstext, battpercentage);
-          strcat(sendsmstext, "%");
-          SendSMS(sendernumber, sendsmstext);          
-          free(sendernumber);
-          DeleteSMS(i);
-        }
-        */        
-        if(strcasestr(checksmstext, "pos") != NULL && strlen(checksmstext) == 3){
+        if(strcasestr(checksmstext, "pos") != nullptr && strlen(checksmstext) == 3){
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
           char battpercentage[3] = "";     
@@ -114,18 +98,17 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);
         }else
-        if(strcasestr(checksmstext, "status") != NULL && strlen(checksmstext) == 6){ 
+        if(strcasestr(checksmstext, "status") != nullptr && strlen(checksmstext) == 6){ 
           char* sendsmstext = sendsmstextarray; 
           char intervallarray[3]="";
           itoa(interval,intervallarray,10); 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           char *sendernumber = SenderNumber(i); 
           strcat(sendsmstext, "Warningnumber: ");
-          *warningnumber = read_EEPROM(10);
+          warningnumber = read_EEPROM(10);
           if(strlen(warningnumber) == 0){
             strcat(sendsmstext, "no number set\n");
           }else{
-            char *warningnumber = read_EEPROM(10);
             strcat(sendsmstext, warningnumber);
             strcat(sendsmstext, "\n");
           }//else       
@@ -133,7 +116,7 @@ void loop(){
           strcat(sendsmstext,intervallarray);
           strcat(sendsmstext, "h\n");
           strcat(sendsmstext,"Wifi Status: ");  
-          if(iswifion == true){
+          if(iswifion){
             strcat(sendsmstext,"on\n");
           }else{
             strcat(sendsmstext,"off\nBattery Status: ");
@@ -146,11 +129,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);
         }else
-        if((strcasestr(checksmstext, "int1") != NULL && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 1") != NULL && strlen(checksmstext) == 5)){
+        if((strcasestr(checksmstext, "int1") != nullptr && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 1") != nullptr && strlen(checksmstext) == 5)){
           interval = 1;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 1 hour.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -160,11 +143,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);
         }else
-        if((strcasestr(checksmstext, "int2") != NULL && strlen(checksmstext) == 4) || ((strcasestr(checksmstext, "int 2") != NULL && strlen(checksmstext) == 5))){
+        if((strcasestr(checksmstext, "int2") != nullptr && strlen(checksmstext) == 4) || ((strcasestr(checksmstext, "int 2") != nullptr && strlen(checksmstext) == 5))){
           interval = 2;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 2 hours.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -174,11 +157,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);        
         }else
-        if((strcasestr(checksmstext, "int4") != NULL && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 4") != NULL && strlen(checksmstext) == 5)){
+        if((strcasestr(checksmstext, "int4") != nullptr && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 4") != nullptr && strlen(checksmstext) == 5)){
           interval = 4;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 4 hours.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -188,11 +171,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);   
         }else
-        if((strcasestr(checksmstext, "int8") != NULL && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 8") != NULL && strlen(checksmstext) == 5)){
+        if((strcasestr(checksmstext, "int8") != nullptr && strlen(checksmstext) == 4) || (strcasestr(checksmstext, "int 8") != nullptr && strlen(checksmstext) == 5)){
           interval = 8;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 8 hours.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -202,11 +185,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i); 
         }else
-        if((strcasestr(checksmstext, "int12") != NULL && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 12") != NULL && strlen(checksmstext) == 6)){
+        if((strcasestr(checksmstext, "int12") != nullptr && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 12") != nullptr && strlen(checksmstext) == 6)){
           interval = 12;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 12 hours.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -216,11 +199,11 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i); 
         }else
-        if((strcasestr(checksmstext, "int24") != NULL && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 24") != NULL && strlen(checksmstext) == 6)){
+        if((strcasestr(checksmstext, "int24") != nullptr && strlen(checksmstext) == 5) || (strcasestr(checksmstext, "int 24") != nullptr && strlen(checksmstext) == 6)){
           interval = 24;
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           strcat(sendsmstext, "GSM will be switched on every 24 hours.\nBattery Status: ");
           char battpercentage[3] = ""; 
           itoa(battpercent,battpercentage,10); 
@@ -230,7 +213,7 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i); 
         }else
-        if(strcasestr(checksmstext, "wapp") != NULL && strlen(checksmstext) == 4){ //wlan daten + GSM daten für app
+        if(strcasestr(checksmstext, "wapp") != nullptr && strlen(checksmstext) == 4){ //wlan daten + GSM daten für app
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
           gsmOff();
@@ -252,12 +235,12 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);
         }else
-        if(strcasestr(checksmstext, "warningnumber") != NULL && strlen(checksmstext) == 13){
+        if(strcasestr(checksmstext, "warningnumber") != nullptr && strlen(checksmstext) == 13){
           char *sendernumber = SenderNumber(i);
           write_EEPROM(10, sendernumber); 
           delay(10);
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);  
+          memset(sendsmstextarray, 0, 161);  
           strcat(sendsmstext,"Battery Status Warningnumber has been changed to "); 
           strcat(sendsmstext, sendernumber);
           strcat(sendsmstext,"\nBattery Status: ");
@@ -269,10 +252,10 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);    
         }else
-        if(strcasestr(checksmstext, "wifi on") != NULL && strlen(checksmstext) == 7){
+        if(strcasestr(checksmstext, "wifi on") != nullptr && strlen(checksmstext) == 7){
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           gsmOff();
           delay(100);
           wifiOn();
@@ -293,10 +276,10 @@ void loop(){
           free(sendernumber);
           DeleteSMS(i);   
        }else
-        if(strcasestr(checksmstext, "wifi off") != NULL && strlen(checksmstext) == 8){
+        if(strcasestr(checksmstext, "wifi off") != nullptr && strlen(checksmstext) == 8){
           char *sendernumber = SenderNumber(i);          
           char *sendsmstext = sendsmstextarray; 
-          memset(sendsmstextarray, NULL, 161);
+          memset(sendsmstextarray, 0, 161);
           iswifion = false;
           strcat(sendsmstext,"Wifi Off!"); 
           strcat(sendsmstext,"\nBattery Status: ");
@@ -314,7 +297,7 @@ void loop(){
       free(unread);
       unread = GetUnread(i);
 
-      if(strcasestr(unread, "REC") == NULL && iswifion == true){ //if wifi is switched on there need to be a short wifi break every 15 minutes to send or recieve SMS
+      if(strcasestr(unread, "REC") == nullptr && iswifion){ //if wifi is switched on there need to be a short wifi break every 15 minutes to send or recieve SMS
         free(unread);
         i = 1;
         gsmOff();
@@ -329,7 +312,6 @@ void loop(){
         unread = GetUnread(i);
 
         battpercent = getBattPercent();
-        battpercent2 = 120;
         batcounter = 0;
 
         // checks battery level after 2 secondes until it`s equal. Sometimes there was an issue before
@@ -381,7 +363,7 @@ char *SenderNumber(int SMSindex) { //get number from incoming SMS
   char *p = readData(5000); //Max response time 5 sec per sim800 AT manual
   ptr = strtok(p, "\"");
   while (count <= 2) {
-    ptr = strtok(NULL, "\"");
+    ptr = strtok(nullptr, "\"");
     count++;
   }
     char *sendernumber = (char*)malloc(20); 
@@ -401,11 +383,11 @@ char *GetUnread(int SMSindex) { //get SMS read status
   char *p = readData(5000); //Max response time 5 sec per sim800 AT manual
   ptr = strtok(p, "\"");
   while (count < 1) { 
-    ptr = strtok(NULL, "\"");
+    ptr = strtok(nullptr, "\"");
     count++;
   }
   char *unread = (char*)malloc(11);
-  memset(unread, NULL, 11);
+  memset(unread, 0, 11);
   strncpy(unread, ptr, 11);
   return unread;
 
@@ -420,10 +402,10 @@ char *GetSMSText(int SMSindex) { //get SMS text
   char *ptr;
   char *p = readData(5000); //Max response time 5 sec per sim800 AT manual
   ptr = strtok(p, "\n");
-  ptr = strtok(NULL, "\n");
-  ptr = strtok(NULL, "\n");
+  ptr = strtok(nullptr, "\n");
+  ptr = strtok(nullptr, "\n");
   char *smstext = sendsmstextarray;
-  memset(sendsmstextarray, NULL, 161);
+  memset(sendsmstextarray, 0, 161);
   strncpy(smstext, ptr, 160);
   sendsmstextarray[strlen(smstext)-1]='\0';
   strlwr(smstext);
@@ -443,7 +425,7 @@ char *GetSMSText(int SMSindex) { //get SMS text
 }
 
 bool SendSMS(const char* number, char* text) { 
-  if (CallReady(30) == false) { //checks if connected
+  if (!CallReady(30)) { //checks if connected
     return false;
   }
   if (strlen(number) < 10 || strlen(number) > 20){
@@ -460,7 +442,7 @@ bool SendSMS(const char* number, char* text) {
   gsmSerial.println((char)26); //the ASCII code of the ctrl+z is 26 (final command to send out SMS)
   delay(100);
   gsmSerial.println();
-  if (waitFor("OK", 20000) == true) {
+  if (waitFor("OK", 20000)) {
     return true;
   } else {
     return false;
@@ -477,7 +459,7 @@ byte getBattPercent() { //get battery level
   gsmSerial.println(("AT+CBC"));
   char *p = readData(1000);
   ptr = strtok(p, ",");
-  ptr = strtok(NULL, ",");
+  ptr = strtok(nullptr, ",");
 
   byte chargestatus = atoi(ptr); 
   // converts the result to interger
@@ -489,7 +471,7 @@ byte getBattPercent() { //get battery level
 
 char *readData(int timer) { 
 
-  memset(dataarray, NULL, arraysize);
+  memset(dataarray, 0, arraysize);
   int a = 0;
   int timeout = 0;
   int wait = 0;
@@ -566,7 +548,7 @@ bool waitFor(const char* searchtext, int timer) { //wait some time for a specifi
   int timercounter = 0;
   int arraysize = 200;
   char incomingByte[arraysize]; 
-  memset(incomingByte, NULL, arraysize);
+  memset(incomingByte, 0, arraysize);
   while (timercounter < (timer / 5) && i < arraysize) {
 
     if (!gsmSerial.available()) {
@@ -687,7 +669,7 @@ bool waitForWifi(const char* searchtext, int timer) { //wait some time for a spe
 
 char *readwifiData(int timer) { //reads incoming data from wifi module
 
-  memset(dataarray, NULL, arraysize);
+  memset(dataarray, 0, arraysize);
   int a = 0;
   int timeout = 0;
   int wait = 0;
@@ -744,22 +726,22 @@ void GetWifis() { //formats wifi data into desired SMS format
 
   wifiSerial.println(F("AT"));
   char* smstext = sendsmstextarray; 
-  if (waitForWifi("OK", 4000) == true) {
+  if (waitForWifi("OK", 4000)) {
     wifiSerial.println(F("AT+CWLAP"));  //get wifis
     char *ptr;
-    memset(sendsmstextarray, NULL, 161); 
+    memset(sendsmstextarray, 0, 161); 
     byte count = 0;
     byte count2 = 0;
     char *p = readwifiData(5000); // ~4 wifis fit into this array
 
     ptr = strtok(p, "\"");
-    while (strlen(smstext) < 92 && ptr != NULL ) { 
-      ptr = strtok(NULL, "\""); 
+    while (strlen(smstext) < 92 && ptr != nullptr ) { 
+      ptr = strtok(nullptr, "\""); 
       count++;
       strcat(smstext, ptr);
       if (count % 2 == 0) {
-        while (count2 < 4 && ptr != NULL ) {
-          ptr = strtok(NULL, ",");
+        while (count2 < 4 && ptr != nullptr ) {
+          ptr = strtok(nullptr, ",");
           count2++;
         }
         sendsmstextarray[strlen(smstext)-1]='\n';
@@ -767,11 +749,11 @@ void GetWifis() { //formats wifi data into desired SMS format
       }
     }//while
     if (count < 3) {
-      memset(smstext, NULL, 161);
+      memset(smstext, 0, 161);
       strcpy(smstext, "no wifi available"); 
     }
   }else{
-    memset(smstext, NULL, 161);
+    memset(smstext, 0, 161);
     strcpy(smstext, "ERROR"); 
   }
 }
@@ -812,7 +794,7 @@ void getLocation() {
 boolean CallReady(int waittime) { //checks if GSM Module is ready for calling/SMS
   for (int connectioncounter = 0; connectioncounter < waittime; connectioncounter++) {
     gsmSerial.println(F("AT+CCALR?"));
-    if ((waitFor(": 1", 1000)) == true) {
+    if ((waitFor(": 1", 1000))) {
       return true;
     }
   }
@@ -826,7 +808,7 @@ void DeleteSMS(int SMSindex) { //delete SMS with index X and all sent SMS
     gsmSerial.print(SMSindex);
     gsmSerial.print(F(",0\r"));
     i++;
-  }while(waitFor("OK", 4000) != true && i < 3);
+  }while(!waitFor("OK", 4000) && i < 3);
   gsmSerial.println(F("AT+CMGDA=\"DEL SENT\"")); //delete all sent SMS
   waitFor("OK", 4000);
 }
@@ -838,35 +820,35 @@ void getLocationApp() { //formats GSM towers into desired format for SMS
   gsmSerial.print(F("AT+CENG?\r\n"));
   char *p = readData(5000);
   char *smstext = sendsmstextarray;
-  memset(sendsmstextarray, NULL, 161);
+  memset(sendsmstextarray, 0, 161);
   char *ptr;
   byte count = 0;
 
   ptr = strtok(p, "\"");
-  while (strlen(smstext) < 140 && ptr != NULL && strcasestr(smstext, "CENG") == NULL && strcasestr(smstext, "FFFF") == NULL && strcasestr(smstext, "0000") == NULL ) { 
+  while (strlen(smstext) < 140 && ptr != nullptr && strcasestr(smstext, "CENG") == nullptr && strcasestr(smstext, "FFFF") == nullptr && strcasestr(smstext, "0000") == nullptr ) { 
     count++;
-    ptr = strtok(NULL, ","); 
+    ptr = strtok(nullptr, ",");
     strcat(smstext, ptr);
     strcat(smstext, ",");
     if(count % 4 == 0){
-      ptr = strtok(NULL, ","); 
-      ptr = strtok(NULL, "\"");
+      ptr = strtok(nullptr, ",");
+      ptr = strtok(nullptr, "\"");
       strcat(smstext, ptr);
       strcat(smstext, "\n");
       count = 0;
-      ptr = strtok(NULL, "\"");
+      ptr = strtok(nullptr, "\"");
      }     
    }//while
 
    count=0;
-   while((strcasestr(smstext, "CENG") != NULL || strcasestr(smstext, "FFFF") != NULL || strcasestr(smstext, ",,") != NULL || strcasestr(smstext, "0000") != NULL) && count < 8){
+   while((strcasestr(smstext, "CENG") != nullptr || strcasestr(smstext, "FFFF") != nullptr || strcasestr(smstext, ",,") != nullptr || strcasestr(smstext, "0000") != nullptr) && count < 8){
      count++;
      char *c2 = strrchr(sendsmstextarray, '\n');
      *(c2+1) = '\0';   
    }
   
    if(strlen(smstext)<15 && strlen(smstext)>150){
-     memset(smstext, NULL, 161);
+     memset(smstext, 0, 161);
      strcpy(smstext, "ERROR");
    }
 }
@@ -874,39 +856,39 @@ void getLocationApp() { //formats GSM towers into desired format for SMS
 void GetWifisApp() { //formats wifis into desired format for SMS
   wifiSerial.println(F("AT"));
   char* smstext = sendsmstextarray; 
-  if (waitForWifi("OK", 4000) == true) {
+  if (waitForWifi("OK", 4000)) {
     wifiSerial.println(F("AT+CWLAP"));  //get wifis
     char *ptr;
-    memset(sendsmstextarray, NULL, 161); 
+    memset(sendsmstextarray, 0, 161); 
     byte count = 0;
     char *p = readwifiData(5000);
     ptr = strtok(p, ",");
-    ptr = strtok(NULL, ","); 
-    while (strlen(smstext) < 139 && ptr != NULL ) { 
-      ptr = strtok(NULL, ","); 
+    ptr = strtok(nullptr, ","); 
+    while (strlen(smstext) < 139 && ptr != nullptr ) { 
+      ptr = strtok(nullptr, ","); 
       strcat(smstext, ptr+1);
-      ptr = strtok(NULL, ":");
+      ptr = strtok(nullptr, ":");
           strcat(smstext, ptr+1);
-        while (count < 4 && ptr != NULL ) {
-          ptr = strtok(NULL, ":");
+        while (count < 4 && ptr != nullptr ) {
+          ptr = strtok(nullptr, ":");
           strcat(smstext, ptr);
           count++;
         }
         count = 0;
-        ptr = strtok(NULL, "\"");
+        ptr = strtok(nullptr, "\"");
         strcat(smstext, ptr);
         strcat(smstext, "\n"); //neu
-        ptr = strtok(NULL, ",");
-        ptr = strtok(NULL, ",");
-        ptr = strtok(NULL, ",");
-        ptr = strtok(NULL, ",");
+        ptr = strtok(nullptr, ",");
+        ptr = strtok(nullptr, ",");
+        ptr = strtok(nullptr, ",");
+        ptr = strtok(nullptr, ",");
     }//while
     if (strlen(smstext) < 10) {
-      memset(sendsmstextarray, NULL, 161); 
+      memset(sendsmstextarray, 0, 161); 
       strcpy(smstext, "no wifi available\n"); 
     }
   }else{
-    memset(sendsmstextarray, NULL, 161); 
+    memset(sendsmstextarray, 0, 161); 
     strcpy(smstext, "ERROR"); 
   }
 }
@@ -924,7 +906,7 @@ void write_EEPROM(int add, char* data){ //writes data (Warningnumber) to EEPROM
 
 char *read_EEPROM(char add){ //reads data (Warningnumber) from EEPROM 
 
-  memset(dataarray, NULL, arraysize);
+  memset(dataarray, 0, arraysize);
   int len=0;
   unsigned char k;
   k=EEPROM.read(add);
