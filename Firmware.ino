@@ -117,7 +117,7 @@ void loop(){
           strcat(sendsmstext, "h\n");
           strcat(sendsmstext,"Wifi Status: ");  
           if(iswifion){
-            strcat(sendsmstext,"on\n");
+            strcat(sendsmstext,"on\nBattery Status: ");
           }else{
             strcat(sendsmstext,"off\nBattery Status: ");
           }
